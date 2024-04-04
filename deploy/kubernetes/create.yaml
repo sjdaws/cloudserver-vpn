@@ -1,0 +1,35 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cloudserver-vpn-create
+spec:
+  template:
+    spec:
+      containers:
+      - args:
+        - --create
+        command:
+        - /app/cloudserver-vpn
+        env:
+        - name: CLOUDSERVER_APIKEY
+          value: ...
+        - name: SERVER_NAME
+          value: vpn.example
+        - name: WIREGUARD_ADDRESS
+          value: 10.194.89.1/30
+        - name: WIREGUARD_PEER1_ALLOWEDIPS
+          value: 10.194.89.2/32
+        - name: WIREGUARD_PEER1_PUBLICKEY
+          value: ...
+        - name: WIREGUARD_PRIVATEKEY
+          value: ...
+        image: docker.io/sjdaws/cloudserver-vpn:latest
+        name: cloudserver-vpn
+        resources:
+          limits:
+            memory: 128Mi
+          requests:
+            cpu: 100m
+      restartPolicy: Never
+  ttlSecondsAfterFinished: 86400

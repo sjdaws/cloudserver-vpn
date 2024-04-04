@@ -1,0 +1,25 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cloudserver-vpn-remove
+spec:
+  template:
+    spec:
+      containers:
+      - args:
+        - --remove
+        command:
+        - /app/cloudserver-vpn
+        env:
+        - name: CLOUDSERVER_APIKEY
+          value: ...
+        image: docker.io/sjdaws/cloudserver-vpn:latest
+        name: cloudserver-vpn
+        resources:
+          limits:
+            memory: 128Mi
+          requests:
+            cpu: 100m
+      restartPolicy: Never
+  ttlSecondsAfterFinished: 86400
