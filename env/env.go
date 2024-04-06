@@ -22,8 +22,14 @@ type CloudServer struct {
 type Env struct {
     Cloudflare  Cloudflare
     CloudServer CloudServer
+    HTTP        HTTP
     Server      Server
     Wireguard   Wireguard
+}
+
+type HTTP struct {
+    Port      int
+    PortAlpha string
 }
 
 type Interface struct {
@@ -60,6 +66,10 @@ func Read() Env {
     // Voyager
     env.CloudServer.ApiKey = os.Getenv("CLOUDSERVER_APIKEY")
     env.CloudServer.Project = helpers.AtoI(os.Getenv("CLOUDSERVER_PROJECT"))
+
+    // HTTP server
+    env.HTTP.Port = helpers.AtoI(os.Getenv("HTTP_PORT"))
+    env.HTTP.PortAlpha = os.Getenv("HTTP_PORT")
 
     // Server
     env.Server.Name = os.Getenv("SERVER_NAME")

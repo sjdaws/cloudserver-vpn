@@ -131,7 +131,7 @@ func findProject(env env.Env) (int, error) {
 }
 
 // listProjectVPS lists all the servers in a project
-func listProjectVPS(env env.Env, projectID int) ([]int, error) {
+func listProjectVPS(env env.Env, projectID int) ([]ServerData, error) {
     request, err := http.NewRequest("GET", fmt.Sprintf("%s/projects/%d/servers", apiURL, projectID), nil)
     if err != nil {
         return nil, fmt.Errorf("unable to create server search request: %v", err)
@@ -158,10 +158,5 @@ func listProjectVPS(env env.Env, projectID int) ([]int, error) {
         return nil, fmt.Errorf("error reading response from server: %v", err)
     }
 
-    var found []int
-    for _, server := range result.Data {
-        found = append(found, server.ID)
-    }
-
-    return found, nil
+    return result.Data, nil
 }

@@ -11,7 +11,7 @@ import (
 
 // Destroy an existing virtual private server
 func Destroy(env env.Env, serverID int) error {
-    errs := validateDestroyEnv(env)
+    errs := env.ValidateDestroyEnv()
     if len(errs) > 0 {
         return fmt.Errorf("unable to remove server:\n - %s", strings.Join(errs, "\n - "))
     }
@@ -36,8 +36,8 @@ func Destroy(env env.Env, serverID int) error {
 }
 
 // ListActiveVPS returns the IDs of all the active VPS servers
-func ListActiveVPS(env env.Env) ([]int, error) {
-    errs := validateDestroyEnv(env)
+func ListActiveVPS(env env.Env) ([]ServerData, error) {
+    errs := env.ValidateDestroyEnv()
     if len(errs) > 0 {
         return nil, fmt.Errorf("unable to remove servers:\n - %s", strings.Join(errs, "\n - "))
     }
@@ -48,15 +48,4 @@ func ListActiveVPS(env env.Env) ([]int, error) {
     }
 
     return listProjectVPS(env, projectID)
-}
-
-// validateDestroyEnv ensures all the required information is specified before attempting to remove a VPN
-func validateDestroyEnv(env env.Env) []string {
-    var errs []string
-
-    if env.CloudServer.ApiKey == "" {
-        errs = append(errs, "CLOUDSERVER_APIKEY is mandatory")
-    }
-
-    return errs
 }

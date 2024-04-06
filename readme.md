@@ -18,7 +18,7 @@ You will also need to decide what [private network range](https://datatracker.ie
 
 ## Usage
 
-The app accepts two command line arguments, which have different configuration requirements. Configuration is read through environment variables.
+The app accepts three command line arguments, which have different configuration requirements. Configuration is read through environment variables.
 
 ### Create VPN
 
@@ -59,3 +59,13 @@ A single VPN can be removed by using `cloudserver-vpn --remove <server id>`
 | Key | Description | Mandatory |
 |-----|-------------|-----------|
 | CLOUDSERVER_APIKEY | [API token](https://cloudserver.nz/account#api-tokens) for cloudserver.nz | Y |
+
+### Run as HTTP server
+
+An HTTP server can be run by using `cloudserver-vpn --serve`
+
+The HTTP server requires the same configuration as [Create VPN](#create-vpn) with an additional configuration for http port.
+
+| Key | Description | Mandatory |
+|-----|-------------|-----------|
+| HTTP_PORT | Port to listen for HTTP connections on, if not specified `5252` will be used | N |

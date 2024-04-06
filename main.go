@@ -9,6 +9,7 @@ import (
     "github.com/sjdaws/cloudserver-vpn/dns"
     "github.com/sjdaws/cloudserver-vpn/env"
     "github.com/sjdaws/cloudserver-vpn/helpers"
+    "github.com/sjdaws/cloudserver-vpn/http"
     "github.com/sjdaws/cloudserver-vpn/vps"
 )
 
@@ -22,6 +23,7 @@ Options:
   --create       Create a VPN server
   --remove       Remove all created VPN servers
   --remove id    Remove a single VPN server
+  --serve        Create an HTTP server
 
 `
 
@@ -64,9 +66,13 @@ func main() {
         if len(os.Args) == 3 {
             active = []int{helpers.AtoI(os.Args[2])}
         } else {
-            active, err = vps.ListActiveVPS(config)
+            servers, err := vps.ListActiveVPS(config)
             if err != nil {
                 log.Fatal(err)
+            }
+
+            for _, server := range servers {
+                active = append(active, server.ID)
             }
 
             log.Printf("Found %d server(s) to clean up", len(active))
@@ -84,5 +90,12 @@ func main() {
         }
 
         log.Print("Completed successfully")
+
+    case "--serve":
+        server := http.New(config)
+        err := server.Start()
+        if err != nil {
+            log.Fatalf("unable to start http server: %v", err)
+        }
     }
 }

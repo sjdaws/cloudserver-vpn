@@ -24,7 +24,7 @@ PublicKey = %s
 
 func generateEncodedWireguardConfiguration(env env.Env) string {
     port := env.Wireguard.Interface.ListenPort
-    if port <= 0 && env.Wireguard.Interface.ListenPortAlpha != "0" {
+    if port == 0 && env.Wireguard.Interface.ListenPortAlpha != "0" {
         port = listenPort
     }
 

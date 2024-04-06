@@ -7,10 +7,8 @@ import (
     "fmt"
     "io"
     "net/http"
-    "regexp"
     "strings"
 
-    "github.com/3th1nk/cidr"
     "github.com/sjdaws/cloudserver-vpn/env"
 )
 
@@ -32,13 +30,15 @@ type Server struct {
 }
 
 type ServerData struct {
-    ID  int  `json:"id"`
-    IPs []IP `json:"ips"`
+    ID   int    `json:"id"`
+    IPs  []IP   `json:"ips"`
+    Name string `json:"name"`
 }
 
 type VPS struct {
-    ID int
-    IP string
+    ID   int
+    IP   string
+    Name string
 }
 
 const userdataTemplate = `#cloud-config
@@ -66,7 +66,7 @@ runcmd:
 
 // Create a new virtual private server
 func Create(env env.Env) (*VPS, error) {
-    errs := validateCreateEnv(env)
+    errs := env.ValidateCreateEnv()
     if len(errs) > 0 {
         return nil, fmt.Errorf("unable to create new server:\n - %s", strings.Join(errs, "\n - "))
     }
@@ -118,10 +118,8 @@ func Create(env env.Env) (*VPS, error) {
     }
 
     var primaryIP string
-    fmt.Printf("Server ID: %d\n", result.Data.ID)
     for _, ip := range result.Data.IPs {
         if ip.Primary {
-            fmt.Printf("Server IP: %s\n", ip.IP)
             primaryIP = ip.IP
             break
         }
@@ -132,54 +130,8 @@ func Create(env env.Env) (*VPS, error) {
     }
 
     return &VPS{
-        ID: result.Data.ID,
-        IP: primaryIP,
+        ID:   result.Data.ID,
+        IP:   primaryIP,
+        Name: result.Data.Name,
     }, nil
-}
-
-// validateCreateEnv ensures all the required information is specified before attempting to create a VPN
-func validateCreateEnv(env env.Env) []string {
-    var errs []string
-
-    if env.CloudServer.ApiKey == "" {
-        errs = append(errs, "CLOUDSERVER_APIKEY is mandatory")
-    }
-
-    if env.Server.Name == "" {
-        errs = append(errs, "SERVER_NAME is mandatory")
-    } else if !regexp.MustCompile(`^\w[\w.-]*\w$`).MatchString(env.Server.Name) {
-        errs = append(errs, fmt.Sprintf("SERVER_NAME '%s' is not a valid RFC 3696 subdomain", env.Server.Name))
-    }
-
-    interfaceCIDR, cidrErr := cidr.Parse(env.Wireguard.Interface.Address)
-    if env.Wireguard.Interface.Address == "" {
-        errs = append(errs, "WIREGUARD_ADDRESS is mandatory")
-    } else if cidrErr != nil {
-        errs = append(errs, fmt.Sprintf("WIREGUARD_ADDRESS '%s' is not a valid CIDR", env.Wireguard.Interface.Address))
-    }
-
-    if env.Wireguard.Interface.ListenPortAlpha != "" && env.Wireguard.Interface.ListenPortAlpha != "0" && (env.Wireguard.Interface.ListenPort < 1 || env.Wireguard.Interface.ListenPort > 65535) {
-        errs = append(errs, "WIREGUARD_LISTENPORT must be numeric and between 0 and 65535 if specified")
-    }
-
-    if env.Wireguard.Interface.PrivateKey == "" {
-        errs = append(errs, "WIREGUARD_PRIVATEKEY is mandatory")
-    } else if len(env.Wireguard.Interface.PrivateKey) != 44 {
-        errs = append(errs, fmt.Sprintf("WIREGUARD_PRIVATEKEY '%s' is not valid", env.Wireguard.Interface.PrivateKey))
-    }
-
-    for _, peer := range env.Wireguard.Peers {
-        peerCIDR, err := cidr.Parse(peer.AllowedIPs)
-        if err != nil {
-            errs = append(errs, fmt.Sprintf("WIREGUARD_PEER%d_ALLOWEDIPS '%s' is not a valid CIDR", peer.ID, peer.AllowedIPs))
-        } else if !interfaceCIDR.Contains(peerCIDR.IP().String()) {
-            errs = append(errs, fmt.Sprintf("WIREGUARD_PEER%d_ALLOWEDIPS '%s' is not within WIREGUARD_ADDRESS '%s' CIDR", peer.ID, peer.AllowedIPs, env.Wireguard.Interface.Address))
-        }
-
-        if len(peer.PublicKey) != 44 {
-            errs = append(errs, fmt.Sprintf("WIREGUARD_PEER%d_PUBLICKEY '%s' is not valid", peer.ID, peer.PublicKey))
-        }
-    }
-
-    return errs
 }

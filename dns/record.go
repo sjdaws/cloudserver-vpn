@@ -19,23 +19,10 @@ func Configure(env env.Env, vps *vps.VPS) error {
 
     ctx := context.Background()
 
-    zones, err := api.ListZones(ctx, env.Cloudflare.Zone)
+    rc, err := getZoneResourceContainer(api, ctx, env.Cloudflare.Zone)
     if err != nil {
-        return fmt.Errorf("unable to list dns zones: %v", err)
+        return err
     }
-
-    var zoneID string
-    for _, zone := range zones {
-        if strings.EqualFold(zone.Name, env.Cloudflare.Zone) {
-            zoneID = zone.ID
-        }
-    }
-
-    if zoneID == "" {
-        return fmt.Errorf("unable to determine zone id for %s", env.Cloudflare.Zone)
-    }
-
-    rc := cloudflare.ZoneIdentifier(zoneID)
 
     records, _, err := api.ListDNSRecords(ctx, rc, cloudflare.ListDNSRecordsParams{Name: env.Server.FQDN})
     if err != nil {
@@ -62,4 +49,53 @@ func Configure(env env.Env, vps *vps.VPS) error {
     }
 
     return nil
+}
+
+// Retrieve the IP address for a DNS record=
+func Retrieve(env env.Env, fqdn string) (string, error) {
+    api, err := cloudflare.NewWithAPIToken(env.Cloudflare.ApiKey)
+    if err != nil {
+        return "", fmt.Errorf("unable to connect to cloudflare api: %v", err)
+    }
+
+    ctx := context.Background()
+
+    rc, err := getZoneResourceContainer(api, ctx, env.Cloudflare.Zone)
+    if err != nil {
+        return "", err
+    }
+
+    records, _, err := api.ListDNSRecords(ctx, rc, cloudflare.ListDNSRecordsParams{Name: fqdn})
+    if err != nil {
+        return "", fmt.Errorf("unable to list dns records for %s: %v", env.Cloudflare.Zone, err)
+    }
+
+    for _, record := range records {
+        if strings.EqualFold(record.Name, fqdn) {
+            return record.Content, nil
+        }
+    }
+
+    return "", fmt.Errorf("unable to find dns record for %s", fqdn)
+}
+
+// getZoneResourceContainers finds the resource container for a zone name
+func getZoneResourceContainer(api *cloudflare.API, ctx context.Context, fqzn string) (*cloudflare.ResourceContainer, error) {
+    zones, err := api.ListZones(ctx, fqzn)
+    if err != nil {
+        return nil, fmt.Errorf("unable to list dns zones: %v", err)
+    }
+
+    var zoneID string
+    for _, zone := range zones {
+        if strings.EqualFold(zone.Name, fqzn) {
+            zoneID = zone.ID
+        }
+    }
+
+    if zoneID == "" {
+        return nil, fmt.Errorf("unable to determine zone id for %s", fqzn)
+    }
+
+    return cloudflare.ZoneIdentifier(zoneID), nil
 }
