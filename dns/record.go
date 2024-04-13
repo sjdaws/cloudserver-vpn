@@ -37,11 +37,11 @@ func Configure(env env.Env, vps *vps.VPS) error {
     }
 
     // Create record if it doesn't exist, otherwise update
+    proxied := false
     if recordID == "" {
-        proxied := false
-        _, err = api.CreateDNSRecord(ctx, rc, cloudflare.CreateDNSRecordParams{Content: vps.IP, Name: env.Server.FQDN, Proxied: &proxied, Type: "A"})
+        _, err = api.CreateDNSRecord(ctx, rc, cloudflare.CreateDNSRecordParams{Content: vps.IP, Name: env.Server.FQDN, Proxied: &proxied, TTL: 60, Type: "A"})
     } else {
-        _, err = api.UpdateDNSRecord(ctx, rc, cloudflare.UpdateDNSRecordParams{Content: vps.IP, ID: recordID})
+        _, err = api.UpdateDNSRecord(ctx, rc, cloudflare.UpdateDNSRecordParams{Content: vps.IP, ID: recordID, Proxied: &proxied, TTL: 60})
     }
 
     if err != nil {
